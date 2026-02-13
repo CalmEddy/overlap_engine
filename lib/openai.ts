@@ -13,7 +13,18 @@ function parseJson<T>(raw: string): T {
   try {
     return JSON.parse(raw) as T;
   } catch (error) {
-    throw new Error(`Failed to parse JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
+    // Show more context about JSON parsing errors
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    const preview = raw.length > 200 ? raw.substring(0, 200) + "..." : raw;
+    const errorPosition = errorMsg.match(/position (\d+)/);
+    if (errorPosition) {
+      const pos = parseInt(errorPosition[1]);
+      const contextStart = Math.max(0, pos - 50);
+      const contextEnd = Math.min(raw.length, pos + 50);
+      const context = raw.substring(contextStart, contextEnd);
+      throw new Error(`Failed to parse JSON at position ${pos}: ${errorMsg}\nContext: ...${context}...`);
+    }
+    throw new Error(`Failed to parse JSON: ${errorMsg}\nPreview: ${preview}`);
   }
 }
 
@@ -23,8 +34,14 @@ export async function runTwoPhaseReport(premise: string, styleId: string): Promi
   try {
   const phase1System = `You are a mechanical overlap discovery engine. Return JSON only.
 Produce only single-sentence overlaps. No jokes. No hedging language.
-You MUST generate the FULL required number of items for each array. Do not stop early.
-Minimum counts are MANDATORY: core (10+), outer (12+), compression (5+).`;
+
+CRITICAL: You MUST generate the FULL required number of items for each array. Do not stop early.
+MANDATORY MINIMUM COUNTS:
+- core: 10 items minimum (aim for 12-15)
+- outer: 12 items minimum (aim for 15-20) 
+- compression: 5 items minimum (aim for 7-10)
+
+Before returning JSON, verify each array meets its minimum count. If any array is short, generate more items.`;
 
   const phase1Prompt = `Return strict JSON with this exact structure. These are MANDATORY minimum counts:
 
@@ -60,17 +77,23 @@ Minimum counts are MANDATORY: core (10+), outer (12+), compression (5+).`;
   ]
 }
 
-CRITICAL REQUIREMENTS:
-1. core MUST be an array with AT LEAST 10 items (10-15 total)
-2. outer MUST be an array with AT LEAST 12 items (12-25 total)
-3. compression MUST be an array with AT LEAST 5 items (5-10 total)
+CRITICAL REQUIREMENTS - THESE ARE MANDATORY MINIMUMS:
+1. core array: Generate EXACTLY 10-15 items (MINIMUM 10, do not stop at 10 - aim for 12-15)
+2. outer array: Generate EXACTLY 12-25 items (MINIMUM 12, do not stop at 12 - aim for 15-20)
+3. compression array: Generate EXACTLY 5-10 items (MINIMUM 5, do not stop at 5 - aim for 7-10)
 4. All arrays must contain objects, NOT strings
 5. All strings must be concrete and non-empty
 6. Each overlap/line must be a complete sentence (8+ characters)
 
+COUNT VERIFICATION BEFORE RETURNING:
+- Count core items: must be 10-15
+- Count outer items: must be 12-25  
+- Count compression items: must be 5-10
+- If any array has fewer than the minimum, generate more items until it meets the requirement
+
 User premise: ${premise}
 
-Generate the FULL required number of items for each array. Do not return fewer items.`;
+DO NOT return the JSON until all arrays meet their minimum counts. Generate the FULL required number of items.`;
 
     const phase1Response = await client.chat.completions.create({
       model: model,
@@ -104,8 +127,16 @@ Generate the FULL required number of items for each array. Do not return fewer i
 
   const style = getStyleContract(styleId);
 
-  const phase2System = `You are writing a final Overlap Analysis Report in plain text and JSON wrapping.
-Use this Style Contract Interpreter as binding rules.
+  const phase2System = `You are writing a final Overlap Analysis Report. Return ONLY a JSON object with a single "report" key containing the complete formatted report as a plain text string (not structured JSON).
+
+CRITICAL JSON REQUIREMENTS:
+- The JSON must be valid and parseable
+- All quotes inside the report string must be escaped as \\"
+- Use \\n for newlines
+- Avoid using straight quotes (") in the report text - use apostrophes (') or rephrase instead
+- The JSON structure must be: {"report": "your text here"} with no other keys
+
+Use this Style Contract Interpreter as binding rules:
 - styleId: ${style.styleId}
 - reference: ${style.reference}
 - voiceDescription: ${style.voiceDescription}
@@ -114,27 +145,43 @@ Use this Style Contract Interpreter as binding rules.
 - energy: ${style.energy}
 - languageConstraints: ${style.languageConstraints.join("; ")}
 - structuralBehavior: ${style.structuralBehavior}
+
 Global language rules: no joke templates, no punchlines, no hedging words.
 Silent self-revision loop (do not print):
 1) Scene check: Concrete Translation includes place/person/action/reaction.
 2) Certainty check: remove hedge language and use declaratives.
 3) Variety check: avoid repeated sentence stems in Escalation Burst.
-4) Anchor check: both overlap anchors remain identifiable in each core block.`;
+4) Anchor check: both overlap anchors remain identifiable in each core block.
 
-  const phase2Prompt = `Transform this discovery JSON into final plain text report inside JSON {"report":"..."}
-Title must be exactly: John Branyan's Overlap Comedy Engine — Overlap Analysis Report
-Sections in order:
-1) Premise Clarified (one sentence)
-2) Surface Assumptions (6-10 bullets)
-3) Core Overlaps (10-15 blocks)
-4) Outer Field Overlaps (12-25 one-sentence overlaps)
-5) Compression Lines (5-10 one-sentence lines)
-Core block format:
-OVERLAP #n
-Label
-Concrete Translation
-Escalation Burst (6-10 lines)
-Brain Storm with Objects, Activities, Idioms/Sayings, Double meanings
+CRITICAL: Return format must be {"report": "full text here"} - do NOT include "sections" or any other keys.`;
+
+  const phase2Prompt = `Transform this discovery JSON into a complete plain text report. Return ONLY a JSON object with a single "report" key containing the full formatted text as a string.
+
+CRITICAL: The response must be EXACTLY this structure:
+{
+  "report": "John Branyan's Overlap Comedy Engine — Overlap Analysis Report\n\n[complete formatted report text here - must be at least 100 characters total]"
+}
+
+DO NOT include any other keys like "sections". Only "report" as a string.
+
+The report string must contain:
+1. Title (exactly): "John Branyan's Overlap Comedy Engine — Overlap Analysis Report"
+2. Premise Clarified (one sentence)
+3. Surface Assumptions (6-10 bullet points)
+4. Core Overlaps (10-15 blocks, each with):
+   OVERLAP #n
+   Label
+   Concrete Translation
+   Escalation Burst (6-10 lines)
+   Brain Storm with Objects, Activities, Idioms/Sayings, Double meanings
+5. Outer Field Overlaps (12-25 one-sentence overlaps)
+6. Compression Lines (5-10 one-sentence lines)
+
+Format the entire report as a single continuous string with newlines (\\n) between sections.
+The total report string must be at least 100 characters.
+
+IMPORTANT: When including the report in JSON, ensure all quotes and special characters are properly escaped. Use \\n for newlines, \\" for quotes within the string.
+
 Discovery JSON:
 ${JSON.stringify(phase1)}`;
 
@@ -154,9 +201,19 @@ ${JSON.stringify(phase1)}`;
     
     let phase2;
     try {
-      phase2 = phase2Schema.parse(parseJson(phase2Raw));
+      const parsed = parseJson(phase2Raw);
+      phase2 = phase2Schema.parse(parsed);
     } catch (error) {
-      throw new Error(`Phase 2 schema validation failed: ${error instanceof Error ? error.message : "Unknown error"}. Response: ${phase2Raw.substring(0, 200)}...`);
+      // Provide more detailed error information
+      if (error instanceof Error && error.message.includes("Failed to parse JSON")) {
+        // JSON parsing error - show the problematic area
+        throw new Error(`Phase 2 JSON parsing failed: ${error.message}`);
+      }
+      // Schema validation error
+      const parsed = parseJson(phase2Raw);
+      const reportLength = typeof parsed.report === "string" ? parsed.report.length : "not a string";
+      const hasTitle = typeof parsed.report === "string" && parsed.report.includes("John Branyan's Overlap Comedy Engine — Overlap Analysis Report");
+      throw new Error(`Phase 2 schema validation failed: ${error instanceof Error ? error.message : "Unknown error"}. Report length: ${reportLength}, Has title: ${hasTitle}. Response preview: ${phase2Raw.substring(0, 300)}...`);
     }
     
     return phase2.report;

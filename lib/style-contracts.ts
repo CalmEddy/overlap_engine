@@ -6,7 +6,7 @@ export type StyleContract = {
   rhythm: string;
   energy: string;
   languageConstraints: string[];
-  structuralBehavior: string;
+  structuralBehavior: string | { multiLine: string; tagging: string };
 };
 
 export const STYLE_CONTRACTS: StyleContract[] = [
@@ -62,13 +62,30 @@ export const STYLE_CONTRACTS: StyleContract[] = [
   },
   {
     styleId: "dave_barry_adjacent",
-    reference: "Mock-serious columnist",
-    voiceDescription: "Mock-serious observer using bureaucratic layering and emphatic certainty.",
-    diction: "Accessible vocabulary, institutional wording where useful.",
-    rhythm: "Columns of medium sentences with occasional short parenthetical asides.",
-    energy: "Playfully authoritative.",
-    languageConstraints: ["No hedging", "Short parenthetical asides allowed", "No punchline templates"],
-    structuralBehavior: "Treat ridiculous behavior as official procedure with confident certainty."
+    reference: "dave_barry_adjacent",
+    voiceDescription:
+      "Mock-serious columnist voice. Treats ordinary life as an official matter, narrates with confident certainty, and escalates by applying bureaucratic or institutional language to trivial situations.",
+    diction:
+      "Plain but wry. Prefers official-sounding nouns and verbs (compliance, policy, regulation, procedure, authorization, committee, documentation) applied to everyday objects. Avoids academic abstractions.",
+    rhythm:
+      "Brisk sentences with confident declarations. Alternates short punchy lines with one longer explanatory line. Occasional short parenthetical asides are allowed.",
+    energy:
+      "Confident, amused, mock-authoritative. The narrator sounds certain and calmly committed, even when the logic is ridiculous.",
+    languageConstraints: [
+      "Do not use hedging language: feels like, looks like, seems, might, probably, kind of, sort of, almost, basically, I guess, I imagine, I picture.",
+      "Write declarative statements with emphatic certainty; state absurd conclusions as facts.",
+      "Escalate by adding official/bureaucratic layers to ordinary situations (forms, policies, committees, compliance).",
+      "Treat trivial objects as if they require procedures, documentation, approvals, and audits.",
+      "Use occasional short parenthetical asides as punch beats; keep them brief.",
+      "Do not use joke templates or explicit punchlines.",
+      "Do not moralize; keep it observational and procedural.",
+      "Keep concrete nouns on the page; avoid abstract thesis language.",
+      "Vary sentence openings to avoid repetitive stems.",
+    ],
+    structuralBehavior: {
+      multiLine: "allowed",
+      tagging: "light",
+    },
   }
 ];
 

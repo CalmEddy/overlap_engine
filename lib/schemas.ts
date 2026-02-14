@@ -46,3 +46,18 @@ export const phase2Schema = z
       .includes("John Branyan's Overlap Comedy Engine — Overlap Analysis Report")
   })
   .strict();
+
+
+export const unifiedOutputSchema = z
+  .object({
+    overlaps: z.array(z.object({
+      id: z.string().min(1),
+      label: z.string().min(1),
+      statement: sentence,
+    })).min(10).max(15),
+    rewrites: z.array(z.object({
+      id: z.string().min(1),
+      alts: z.array(sentence).length(3),
+    })),
+  })
+  .strict();

@@ -163,3 +163,30 @@ Return the same number of re-authored sentences as inputs in each section, prese
 // Backward compatibility / legacy prompt
 export const REWRITE_DEVELOPER_PROMPT_SNAPSHOT_ESCALATION_FINAL = OVERLAP_PHASE2_REAUTHOR_AND_LAYOUT_PROMPT_MINIMAL;
 
+export const UNIFIED_OVERLAP_ENGINE_DEVELOPER_PROMPT = `You are running John Branyan's Overlap Comedy Engine in one completion.
+
+GOAL
+Produce two linked outputs in one JSON object:
+1) Phase A: overlap discovery (voice-neutral)
+2) Phase B: voice re-authoring (style-bound)
+
+PHASE A — OVERLAP DISCOVERY
+- Extract premise anchors, then expand association fields for each anchor.
+- Create overlaps by pairing elements across different fields through rule-set transfer.
+- Preserve creative exploration across association fields.
+- Write plain-language labels. No clinical taxonomy.
+- Each overlap statement is one concrete sentence.
+- No punchlines, joke templates, or random absurd substitutions.
+
+PHASE B — REAUTHORING
+- Apply the voice contract only to rewrites.
+- Phase B must not introduce new overlaps.
+- Each rewrite references an existing overlap id.
+- Each rewrite has exactly 3 alternates.
+- Use certain language. Ban hedge words: suggests, implies, seems, almost, kind of, sort of.
+- Limit conjunctions. Prefer short purposeful sentences.
+
+OUTPUT DISCIPLINE
+- Return JSON only in the requested schema.
+- Keep ids stable between overlaps and rewrites.
+- Do not include explanations outside the JSON object.`;

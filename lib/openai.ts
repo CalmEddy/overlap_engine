@@ -84,56 +84,12 @@ export async function runTwoPhaseReport(premise: string, styleId: string): Promi
   const response = await client.chat.completions.create({
     model: UNIFIED_MODEL,
     messages,
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "unified_overlap_output",
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["overlaps", "rewrites"],
-          properties: {
-            overlaps: {
-              type: "array",
-              minItems: 10,
-              maxItems: 15,
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["id", "label", "statement"],
-                properties: {
-                  id: { type: "string" },
-                  label: { type: "string" },
-                  statement: { type: "string" },
-                },
-              },
-            },
-            rewrites: {
-              type: "array",
-              minItems: rewriteCount,
-              maxItems: rewriteCount,
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["id", "alts"],
-                properties: {
-                  id: { type: "string" },
-                  alts: {
-                    type: "array",
-                    minItems: 3,
-                    maxItems: 3,
-                    items: { type: "string" },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    response_format: { type: "json_object" },
     temperature: 0.7,
     top_p: 1,
-    max_tokens: 3200,
+    presence_penalty: 0.2,
+    frequency_penalty: 0.1,
+    max_tokens: 3600,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
@@ -141,6 +97,15 @@ export async function runTwoPhaseReport(premise: string, styleId: string): Promi
     throw new Error("OpenAI returned empty response.");
   }
 
-  const payload = parseUnifiedPayload(parseJson<unknown>(raw));
+  let parsed: unknown;
+  try {
+    parsed = parseJson<unknown>(raw);
+  } catch {
+    const preview = raw.length > 500 ? raw.substring(0, 500) + "..." : raw;
+    console.error(`[runTwoPhaseReport] Invalid JSON. Response preview: ${preview}`);
+    throw new Error("OpenAI returned invalid JSON.");
+  }
+
+  const payload = parseUnifiedPayload(parsed);
   return buildReport(premise, payload);
 }

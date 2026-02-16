@@ -163,30 +163,172 @@ Return the same number of re-authored sentences as inputs in each section, prese
 // Backward compatibility / legacy prompt
 export const REWRITE_DEVELOPER_PROMPT_SNAPSHOT_ESCALATION_FINAL = OVERLAP_PHASE2_REAUTHOR_AND_LAYOUT_PROMPT_MINIMAL;
 
-export const UNIFIED_OVERLAP_ENGINE_DEVELOPER_PROMPT = `You are running John Branyan's Overlap Comedy Engine in one completion.
+/**
+ * UNIFIED: Overlap discovery + reauthoring in a single completion
+ * - Phase A: Generate overlap statements via association-field pairing (voice-neutral)
+ * - Phase B: Reauthor selected overlaps using the voice contract (voice-specific)
+ *
+ * CRITICAL: No punchlines, no joke templates, no novelty misuse, no validation/rejection/steering.
+ */
+export const UNIFIED_OVERLAP_ENGINE_DEVELOPER_PROMPT = `
+You are generating structured output for John Branyan's Overlap Comedy Engine.
 
-GOAL
-Produce two linked outputs in one JSON object:
-1) Phase A: overlap discovery (voice-neutral)
-2) Phase B: voice re-authoring (style-bound)
+The engine detects overlaps by analyzing tensions between association fields drawn from the anchors inside the premise.
 
-PHASE A — OVERLAP DISCOVERY
-- Extract premise anchors, then expand association fields for each anchor.
-- Create overlaps by pairing elements across different fields through rule-set transfer.
-- Preserve creative exploration across association fields.
-- Write plain-language labels. No clinical taxonomy.
-- Each overlap statement is one concrete sentence.
-- No punchlines, joke templates, or random absurd substitutions.
+You will complete two phases in one response.
 
+---------------------------------------------------------
+CORE ORIENTATION
+---------------------------------------------------------
+This task is semantic detection, not creative invention.
+You are surfacing structural friction that already exists between associations.
+Do not manufacture spectacle.
+Do not stage fictional events.
+Do not escalate.
+Detect. Compare. Surface.
+
+Phase A is analytical and voice-neutral.
+Phase B reexpresses the SAME overlaps (no new collisions).
+
+---------------------------------------------------------
+PHASE A — DETECT STRUCTURAL COLLISIONS
+---------------------------------------------------------
+
+1) Decompose the premise into structural anchors.
+
+   Break the statement into conceptual components
+   that carry independent semantic force.
+
+   Treat each component as a semantic territory
+   (association field) containing all concepts naturally associated with it.
+
+2) Compare semantic territories directly.
+
+   Identify elements that appear in more than one territory
+   but operate differently inside each one.
+
+   An overlap begins when a shared element
+   exists across territories but behaves,
+   functions, signals value, or carries meaning differently.
+
+3) Generate a broad internal pool of candidate overlaps using transfer-and-test.
+
+   Repeatedly:
+
+   a) Select a shared element across two territories.
+
+   b) Observe how that element behaves differently inside each territory.
+
+   c) Express the friction created by that divergence.
+
+   d) Write one declarative sentence that exposes that friction clearly.
+
+   The sentence must include:
+   - At least one concrete noun or action from Territory A.
+   - At least one concrete noun or action from Territory B.
+
+4) Expand within each detected seam.
+
+   After identifying one primary overlap,
+   scan the same shared-element seam for additional tensions.
+
+   Secondary overlaps must:
+   - Introduce new concrete specifics from the seam’s association pool.
+   - Surface new friction within that same shared element.
+   - Avoid restating the same contrast with synonyms.
+
+5) Continue generating overlap families until structural saturation.
+
+   Structural saturation occurs when:
+   - Multiple distinct shared elements have been explored.
+   - Each anchor territory has contributed to overlap generation.
+   - New comparisons primarily reproduce previously surfaced structural patterns.
+
+   Each new overlap family must be driven by a different shared element
+   than previous families.
+
+6) Evaluate for structural strength.
+
+   A strong overlap:
+   - Makes the friction immediately visible.
+   - Clearly draws from at least two anchor territories.
+   - Contains concrete elements.
+   - Has expressive durability (can generate further tensions inside the seam).
+
+7) Select the final 10–15 strongest overlaps from the full candidate pool.
+
+   Treat the pool as a single list of candidates.
+
+   For each candidate overlap, assign an internal strength score based on:
+   - Visibility: the friction is immediately clear in one read.
+   - Dual-rooting: concrete elements from at least two association fields are present.
+   - Specificity: the sentence uses tangible details rather than abstract labels.
+   - Distinctness: it is not the same underlying overlap as another candidate.
+   - Durability: it can support multiple secondary overlaps inside the same seam.
+
+   Then select the 10–15 highest-scoring candidates across the entire pool.
+
+   When two candidates are variations of the same underlying overlap,
+   keep only the highest-scoring one and replace the others
+   with the next best candidates from different parts of the pool.
+
+
+---------------------------------------------------------
+FORM REQUIREMENTS
+---------------------------------------------------------
+- 10–15 overlaps.
+- One sentence each.
+- Declarative.
+- Concrete.
+- No hedging.
+- No explanation.
+- No theatrical scene invention.
+- Avoid repeating the same structural driver.
+
+---------------------------------------------------------
 PHASE B — REAUTHORING
-- Apply the voice contract only to rewrites.
-- Phase B must not introduce new overlaps.
-- Each rewrite references an existing overlap id.
-- Each rewrite has exactly 3 alternates.
-- Use certain language. Ban hedge words: suggests, implies, seems, almost, kind of, sort of.
-- Limit conjunctions. Prefer short purposeful sentences.
+---------------------------------------------------------
 
-OUTPUT DISCIPLINE
-- Return JSON only in the requested schema.
-- Keep ids stable between overlaps and rewrites.
-- Do not include explanations outside the JSON object.`;
+Select exactly K overlaps for rewrite (K provided by user).
+
+For each selected overlap:
+
+1) Preserve the same structural collision.
+   Do not change the anchors or the shared element driving the friction.
+
+2) Reexpress the collision by returning to the same association fields
+   and selecting different concrete details from those fields.
+
+Each alternative must:
+- Be one sentence.
+- Express the same friction.
+- Introduce new specific nouns or imagery drawn from the same anchor pools.
+- Be strong and direct.
+- Avoid filler or explanation.
+- Avoid simple synonym substitution.
+
+The goal is associative expansion, not paraphrase.
+
+---------------------------------------------------------
+OUTPUT FORMAT (STRICT JSON ONLY)
+---------------------------------------------------------
+Return valid JSON only in exactly this shape:
+
+{
+  "overlaps": [
+    { "id": "A1", "label": "plain language label", "statement": "one sentence overlap statement" }
+  ],
+  "rewrites": [
+    { "id": "A1", "alts": ["alt 1", "alt 2", "alt 3"] }
+  ]
+}
+
+COUNTS:
+- overlaps: 10–15
+- rewrites: exactly K items, each with exactly 3 alternatives.
+
+LABEL RULES:
+- Plain language.
+- Describe the misalignment being surfaced.
+- No abstract taxonomy labels.
+`;
